@@ -1,8 +1,12 @@
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
+import GoogleProvider from "next-auth/providers/google";
+import GitHubProvider from "next-auth/providers/github";
 import bcrypt from 'bcryptjs';
 import dbConnect from '@/lib/dbConnect';
 import UserModel from '@/model/User';
+import GoogleUser from '@/model/GoogleUser';
+import GithubUser from '@/model/GithubUser';
 
 export const authOptions: NextAuthOptions = {
     providers: [
@@ -54,18 +58,74 @@ export const authOptions: NextAuthOptions = {
         }
       },
     }),
+    //lets use the google provider
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID||"",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET||"",
+    }),
+    //lets use the github provider
+    GitHubProvider({
+      clientId: process.env.GITHUB_ID||"",
+      clientSecret: process.env.GITHUB_SECRET||"",
+    })
     ],
     //here we are going to define the callbacks
-    callbacks: {
-      //the jwt strategy where a jwt token will be transferred to the browser
-    async jwt({ token, user }) {
-            if (user) {
-                //we will store as much data in the token so that later we can 
-                //retrieve the token and access a lot of data
-        token._id = user._id?.toString(); // Convert ObjectId to string
-        token.isVerified = user.isVerified;
-        token.username = user.username;
+  callbacks: {
+    async signIn({ user, account }) {
+       //if logged in using google then save the user under github users in 
+      //database if not earlier created
+      if (account?.provider === "google") {
+        const { name, email } = user;
+        try {
+          //connect to DB
+          await dbConnect();
+          const userExists = await GoogleUser.findOne({ email });
+
+          if (!userExists) {
+            await GoogleUser.create({ name, email });
+          }
+        } catch (error) {
+          console.log(error);
+        }
       }
+      //if logged in using github then save the user under github users in 
+      //database if not earlier created
+      if (account?.provider === "github") {
+        const { name, email } = user;
+        try {
+          //connect to DB
+          await dbConnect();
+          const userExists = await GithubUser.findOne({ email });
+
+          if (!userExists) {
+            await GithubUser.create({ name, email });
+          }
+        } catch (error) {
+          console.log(error);
+        }
+      }
+
+      return true;
+    },
+      //the jwt strategy where a jwt token will be transferred to the browser
+      async jwt({ token, user, account }) {
+        if (user) {
+          if (account?.provider === "google") {
+            //if logged in using google
+            token.username = user.name||"";
+          }
+          else if (account?.provider === "github") {
+            //if logged in using github
+            token.username = user.name||"";
+          }
+          else {
+            //we will store as much data in the token so that later we can 
+            //retrieve the token and access a lot of data
+            token._id = user._id?.toString(); // Convert ObjectId to string
+            token.isVerified = user.isVerified;
+            token.username = user.username;
+          }
+        }
       return token;//return the token
         },
         //the session strategy
@@ -73,7 +133,6 @@ export const authOptions: NextAuthOptions = {
       if (token) {
         session.user._id = token._id;
         session.user.isVerified = token.isVerified;
-        session.user.isAcceptingMessages = token.isAcceptingMessages;
         session.user.username = token.username;
       }
       return session;

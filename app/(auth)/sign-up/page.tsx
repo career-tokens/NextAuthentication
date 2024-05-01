@@ -22,6 +22,8 @@ import axios, { AxiosError } from "axios";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { signUpSchema } from "@/schemas/signUpSchema";
+import Image from "next/image";
+import { signIn } from "next-auth/react";
 
 export default function SignUpForm() {
   //state for storing username
@@ -122,13 +124,13 @@ export default function SignUpForm() {
     <div className="flex justify-center items-center min-h-screen">
       <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-lg shadow-md">
         <div className="text-center">
-          <h1 className="text-3xl font-extrabold tracking-tight lg:text-5xl mb-6">
+          <h1 className="text-2xl font-extrabold tracking-tight lg:text-4xl mb-2">
             Join the Community
           </h1>
           <p className="mb-4">Sign up to get started</p>
         </div>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               name="username"
               control={form.control}
@@ -165,9 +167,9 @@ export default function SignUpForm() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <Input {...field} name="email" />
-                  <p className="text-muted text-gray-400 text-sm">
+                  {/* <p className="text-green-400 text-sm">
                     We will send you a verification code
-                  </p>
+                  </p> */}
                   <FormMessage />
                 </FormItem>
               )}
@@ -196,6 +198,19 @@ export default function SignUpForm() {
             </Button>
           </form>
         </Form>
+        <div className="w-full flex justify-evenly items-center">
+          <div className="w-[40%] h-[2px] bg-black" />
+          <div className="text-lg">OR</div>
+          <div className="w-[40%] h-[2px] bg-black"/>
+        </div>
+        <div className="third-party flex justify-center gap-x-[25%]">
+          <button onClick={() => signIn("github")}>
+          <Image width="64" height="64" src="https://img.icons8.com/sf-black-filled/64/github.png" alt="github"/>
+          </button>
+          <button onClick={() => signIn("google")}>
+          <Image width="52" height="52" src="https://img.icons8.com/color/48/google-logo.png" alt="google-logo"/>
+          </button>
+        </div>
         <div className="text-center mt-4">
           <p>
             Already a member?{" "}

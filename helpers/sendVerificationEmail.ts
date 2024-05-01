@@ -1,5 +1,4 @@
-import { resend } from "@/lib/resend";
-import VerificationEmail from "../emails/VerificationEmail";
+import emailjs from '@emailjs/nodejs';
 import { ApiResponse } from '@/types/ApiResponse';
 
 export async function sendVerificationEmail(
@@ -9,17 +8,20 @@ export async function sendVerificationEmail(
 ): Promise<ApiResponse> {
   try {
     
-    const { data, error }=await resend.emails.send({
-      from: 'NextJS Auth <onboarding@resend.dev>',
-      to: [email],
-      subject: 'Verification Code',
-      react: VerificationEmail({ username, otp: verifyCode }) //you will 
-      //find the VerificationEmail component being used here,
-    });
-
-    if (error) {
-      return { success: false,message: error.message};
-    }
+    await emailjs
+      .send(
+        process.env.EMAILJS_SERVICE_ID||"",
+        process.env.EMAILJS_TEMPLATE_ID||"",
+        {
+          username:username,
+          to_email: email,
+          otp:verifyCode,
+        },
+        {
+          publicKey: process.env.EMAILJS_PUBLIC_KEY||"",
+          privateKey: process.env.EMAILJS_PRIVATE_KEY||"",
+        }
+      )
     return { success: true,message: 'Verification email sent successfully.'};
   } catch (emailError) {
     console.error('Error sending verification email:', emailError);
